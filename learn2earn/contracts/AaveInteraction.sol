@@ -4,10 +4,6 @@ pragma solidity 0.8.10;
 import "@aave/core-v3/contracts/interfaces/IPool.sol";
 import "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
-// Cannot us below format with hardhat
-// import {IPoolAddressesProvider} from "https://github.com/aave/aave-v3-core/contracts/interfaces/IPoolAddressesProvider.sol";
-// import {IPool} from "https://github.com/aave/aave-v3-core/blob/master/contracts/interfaces/IPool.sol";
-
 // Used for testing
 // import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 88888888888 are these the same thing??????
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,6 +14,7 @@ contract AaveInteraction {
     IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
     IPool public immutable POOL;
     address public immutable ADDRESS_WETH;
+    address public immutable ADDRESS_MATIC;
 
     address owner;
     // WETH on mumbai
@@ -38,10 +35,13 @@ contract AaveInteraction {
         //     address(0x5343b5bA672Ae99d627A1C87866b8E53F47Db2E6)
         // ); // Polygon mainnet address: 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb
         // POOL = IPool(ADDRESSES_PROVIDER.getPool()); // 8888888888888888888888888888888888888888888 maybe invalid sturcture?
-        ADDRESS_WETH = address(0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa);
+        ADDRESS_WETH = address(0xd575d4047f8c667E064a4ad433D04E25187F40BB);
+        ADDRESS_MATIC = address(0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889);
+        // wrapped matic: 0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889;
+        // 0xd575d4047f8c667E064a4ad433D04E25187F40BB or Depricated:0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa
 
         owner = msg.sender;
-        asset = ADDRESS_WETH;
+        asset = ADDRESS_MATIC;
         amount = 0.001 ether;
         recipient = address(this);
         // onBehalfOf = 0x434830d61c9a141614b2fDb6DC01481a9c366F7e;
@@ -50,7 +50,8 @@ contract AaveInteraction {
     }
 
     function deposit() public payable onlyOwner {
-        POOL.deposit(asset, amount, recipient, referralCode);
+        POOL.supply(asset, amount, recipient, referralCode);
+        // POOL.supplyWithPermit(asset, amount, recipient, referralCode, deadline, permitV, permitR, permitS);
     }
 
     function withdraw() public payable onlyOwner {
@@ -58,8 +59,8 @@ contract AaveInteraction {
     }
 
     function deleteItAll() public onlyOwner {
-        uint256 remainingWETH = IERC20(ADDRESS_WETH).balanceOf(address(this));
-        IERC20(ADDRESS_WETH).transfer(msg.sender, remainingWETH);
+        uint256 remainingWrappedAsset = IERC20(asset).balanceOf(address(this));
+        IERC20(asset).transfer(msg.sender, remainingWrappedAsset);
         selfdestruct(payable(msg.sender));
     }
 
@@ -74,11 +75,15 @@ contract AaveInteraction {
         emit Received(msg.sender, msg.value);
     }
 
-    function helper() public view returns (address) {
+    function helperPOOL() public view returns (address) {
         return address(POOL);
     }
 
-    function helperTwo() public view returns (address) {
+    function helperRECIPIENT() public view returns (address) {
         return address(recipient);
+    }
+
+    function helperWETHbalance() public view returns (uint256) {
+        return IERC20(asset).balanceOf(address(this));
     }
 }
