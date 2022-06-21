@@ -35,7 +35,7 @@ contract AaveInteraction {
 
     function deposit() external payable {
         // Needed to convert native token into ERC20 token + recieve function
-        // funds are wrapped and then deposited, this contract is the recipient of wrapped native token.
+        // funds are wrapped and then deposited, `this` contract is the recipient of wrapped native token.
         gateway.depositETH{value: address(this).balance}(
             ADDRESS_MATIC_POOL,
             recipient,
@@ -66,6 +66,8 @@ contract AaveInteraction {
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
+
+    // Add fallback function
 }
 
 // Include this for non-native asset pool interaction
